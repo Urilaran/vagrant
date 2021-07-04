@@ -103,6 +103,21 @@ vagrant init ubuntu/bionic64
 git clone https://github.com/aydemirkala/vagrant.git
 cd vagrant
 vagrant up
+# If you get below error message:
+#==> node1: Booting VM...
+#There was an error while executing `VBoxManage`, a CLI used by Vagrant
+#for controlling VirtualBox. The command and stderr is shown below.
+
+#Command: ["startvm", "2ea48654-6686-49c1-9ba5-b6672c31078d", "--type", "headless"]
+
+#Stderr: VBoxManage.exe: error: VMMR0_DO_NEM_INIT_VM failed: VERR_NEM_MISSING_KERNEL_API (VERR_NEM_MISSING_KERNEL_API).
+#VBoxManage.exe: error: VT-x is not available (VERR_VMX_NO_VMX)
+#VBoxManage.exe: error: Details: code E_FAIL (0x80004005), component ConsoleWrap, interface IConsole
+
+Control Panel -> Program And Features -> Turn Windows Features on or off-> HyperV->Turn Off
+
+
+
 
 
 ## Shutdown VM box name
