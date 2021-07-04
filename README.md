@@ -1,6 +1,6 @@
 # VAGRANT KUBERNETES DEPLOYMENT WITH PYTHON APP MYSQL DB
 
-The main purpose of this project is to deploy singe kubernetes node and python application by single command which is 'vagrant up'. Also its important to redeploy application when source code changes with the least effort. 
+The main purpose of this project is to deploy singe kubernetes node with python flask application by single command which is 'vagrant up'. Also its important to redeploy application when source code changes with the least effort. 
 
 Project consists of ansible roles which are neccessary to complete below steps when vagrant provisioning begins.
 
@@ -20,6 +20,15 @@ Depending of machine resources you may have to wait a few minutes for apps to ru
 
 if everything is ok then you can access application from browser http://192.168.50.10:30080/ 
 Output is: Hello Devops 123, 1234!
+
+Notes:
+Gunicorn runs flask application and binds at port 3000. 
+Kubernetes version is 1.21.0, 
+python image is from alpine. 
+Mysql image is latest mysql version. 
+Private image registry version is 2.7.0. 
+Kubernetes metric server and dashboard are also installed.    
+
 
 ## Download and Install Vagrant
 
