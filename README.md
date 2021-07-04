@@ -115,6 +115,7 @@ vagrant up
 #VBoxManage.exe: error: Details: code E_FAIL (0x80004005), component ConsoleWrap, interface IConsole
 
 Control Panel -> Program And Features -> Turn Windows Features on or off-> HyperV->Turn Off
+Restart PC
 
 
 
