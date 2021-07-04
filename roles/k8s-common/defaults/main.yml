@@ -1,0 +1,97 @@
+---
+
+domain_name: example.local
+
+## cluster endpoint - control plane endpoint - cluster behind lb dns name
+control_plane_endpoint: k8s.{{ domain_name }}
+control_plane_endpoint_ip: 192.168.50.10    # node1 ip address for single master cluster
+
+
+k8s_gpg_url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
+k8s_repo: 'https://apt.kubernetes.io/'
+docker_gpg_url: 'https://download.docker.com/linux/ubuntu/gpg'
+docker_repo: 'https://download.docker.com/linux/ubuntu'
+k8s_req_packages:
+  - vim
+  - git
+  - curl
+  - wget
+  - kubelet
+  - kubeadm
+  - kubectl
+
+docker_req_packages:
+  - containerd.io
+  - docker-ce
+  - docker-ce-cli
+
+
+pod_network: 192.169.0.0/16
+
+docker_net_url: 'https://cloud.weave.works/k8s/net'
+
+
+kubernete_sysctl_file: |
+  net.bridge.bridge-nf-call-ip6tables = 1
+  net.bridge.bridge-nf-call-iptables = 1
+
+docker_config_file: |
+  {
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+  }
+
+
+metric_server_version: v0.4.1
+
+
+dashboard_version: v2.0.4
+dashboard_sa_file: |
+  apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: admin-user
+    namespace: kubernetes-dashboard
+
+
+
+dashboard_rb_file: |
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: admin-user
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: cluster-admin
+  subjects:
+  - kind: ServiceAccount
+    name: admin-user
+    namespace: kubernetes-dashboard
+
+
+dashboard_svc_file: |
+  apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      k8s-app: kubernetes-dashboard
+    name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+  spec:
+    externalTrafficPolicy: Cluster
+    ports:
+    - nodePort: 32323
+      port: 80
+      protocol: TCP
+      targetPort: 9090
+    selector:
+      k8s-app: kubernetes-dashboard
+    sessionAffinity: None
+    type: NodePort
+
+

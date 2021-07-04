@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-deploy
+  labels:
+    app: flask
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask
+  template:
+    metadata:
+      labels:
+        app: flask
+    spec:
+      imagePullSecrets:
+      - name: secret-key
+      containers:
+      - name: myflask
+        image: k8s-registry.local:5000/myflask:v0
+        imagePullPolicy: Always 
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MYSQL_USERNAME
+          value: "root"
+        - name: MYSQL_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: mysql-root-password
+              key: MYSQL_ROOT_PASSWORD
+        - name: MYSQL_INSTANCE_NAME
+          value: "pythonapp"
+        - name: MYSQL_PORT_3306_TCP_ADDR
+          value: "mydb" 
+        - name: MYSQL_PORT_3306_TCP_PORT
+          value: "3306"
+

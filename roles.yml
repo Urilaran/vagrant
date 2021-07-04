@@ -1,0 +1,15 @@
+---
+
+- hosts: all
+  become: true
+  roles:
+    - role: edithosts
+    - role: k8s-common
+    - role: private-registry
+
+- hosts: all
+  become: true
+  roles:
+    - python-src
+    - k8s-pythonapp-deploy
+  tags: myflask

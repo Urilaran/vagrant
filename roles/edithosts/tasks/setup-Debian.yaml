@@ -1,0 +1,8 @@
+---
+# tasks file for akala.kubeadm
+
+- name: prepare /etc/hosts 
+  shell: |
+    echo "{{control_plane_endpoint_ip}}  {{control_plane_endpoint}}" >> /etc/hosts
+    echo "{{k8snode_ip}}  {{k8snode_hostname}}" >> /etc/hosts
+

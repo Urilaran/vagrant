@@ -1,0 +1,47 @@
+---
+- name: Docker login
+  shell: |
+    docker login k8s-registry.local:5000 -u admin -p "admin123"
+
+- name: create pythonapp deployment directory
+  file: 
+    path: /root/workspace/pythonapp
+    state: directory
+    mode: '0755'
+
+- name: copy yaml files
+  copy:
+    src: "{{ item }}"
+    dest: /root/workspace/pythonapp
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - mysql-pv.yaml
+    - mysql-pvc.yaml
+    - mysql-service.yaml
+    - mysql-initdb-config.yaml 
+    - mysql-secret.yaml
+    - mysql-deployment.yaml
+    - python-service.yaml
+    - python-deployment.yaml
+
+- name: apply yaml files
+  shell: |
+    cd /root/workspace/pythonapp
+    inew=$(cat /root/buildid)
+    sed -i -e "s/5000\/myflask\:v0/5000\/myflask\:v$inew/g" python-deployment.yaml
+    kubectl apply -f "{{ item }}"
+    echo "$inew" > /root/buildidold
+  with_items:
+    - mysql-pv.yaml
+    - mysql-pvc.yaml
+    - mysql-service.yaml
+    - mysql-initdb-config.yaml 
+    - mysql-secret.yaml
+    - mysql-deployment.yaml
+    - python-service.yaml
+    - python-deployment.yaml
+
+
+

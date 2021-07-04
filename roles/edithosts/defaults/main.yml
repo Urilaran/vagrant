@@ -1,0 +1,11 @@
+---
+
+domain_name: example.local
+
+## cluster endpoint - control plane endpoint - cluster behind lb dns name
+control_plane_endpoint: k8s.{{ domain_name }}
+control_plane_endpoint_ip: "192.168.50.10"    # node1 ip address for single master cluster
+
+## /etc/hosts icerigi olusturulur. Bu kisim guncellenecek daha sonra simdilik task icinde de manuel degistirmek gerekiyor.
+k8snode_ip: "192.168.50.10"
+k8snode_hostname: "node1"

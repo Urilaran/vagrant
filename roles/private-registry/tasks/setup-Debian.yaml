@@ -1,0 +1,75 @@
+---
+- name: create ssl path
+  file:
+    path: /opt/docker-registry/cert
+    state: directory
+    mode: '0755'
+
+- name: copy answer
+  copy:
+    src: answer
+    dest: /opt/docker-registry/cert/answer
+    owner: root
+    group: root
+    mode: 0755
+
+- name: copy openssl.cnf
+  copy:
+    src: openssl.cnf
+    dest: /opt/docker-registry/cert/openssl.cnf
+    owner: root
+    group: root
+    mode: 0755
+ 
+- name: generate ssl cert
+  shell: |
+    cd /opt/docker-registry/cert
+    openssl req -newkey rsa:2048 -nodes -keyout registry_auth.key -x509 -days 730 -out registry_auth.crt -config openssl.cnf < answer
+
+- name: addimg registry hostname to /etc/hosts
+  shell: |
+    echo "{{ ansible_ssh_host }} k8s-registry.local" >> /etc/hosts
+
+- name: create docker client crt path
+  file:
+    path: /etc/docker/certs.d/k8s-registry.local:5000
+    state: directory
+    mode: '0755'
+
+- name: create docker auth path
+  file:
+    path: /opt/docker-registry/auth
+    state: directory
+    mode: '0755'
+
+- name: Copy crt to client path
+  shell: | 
+    cp /opt/docker-registry/cert/registry_auth.crt /etc/docker/certs.d/k8s-registry.local:5000/ca.crt
+    cp /opt/docker-registry/cert/registry_auth.key /opt/docker-registry/auth/.
+
+- name: install apache-utils
+  apt:
+    name: ['apache2-utils']
+    update_cache: true
+    state: latest
+
+- name: create .htaacces and run private registry
+  shell: |
+    docker run --rm --entrypoint htpasswd registry:2.7.0 -Bbn admin admin123 >> /opt/docker-registry/auth/htpasswd
+    docker run -d -p 5000:5000 --restart=always --name registry \
+    -v /opt/docker-registry/data:/var/lib/registry \
+    -v /opt/docker-registry/auth:/auth \
+    -e "REGISTRY_AUTH=htpasswd" \
+    -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+    -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+    -v /opt/docker-registry/cert:/certs \
+    -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry_auth.crt \
+    -e REGISTRY_HTTP_TLS_KEY=/certs/registry_auth.key \
+    registry:2.7.0
+    docker login k8s-registry.local:5000 -u admin -p "admin123"
+    kubectl create secret docker-registry secret-key --docker-server=k8s-registry.local:5000 --docker-username=admin --docker-password=admin123
+
+
+- name: touch buildid file
+  shell: echo "0" > /root/buildidold
+

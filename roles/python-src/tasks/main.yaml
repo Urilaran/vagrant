@@ -1,0 +1,13 @@
+---
+- name: Build flask application
+  shell: |
+    docker login k8s-registry.local:5000 -u admin -p "admin123"
+    cd /vagrant/roles/python-src/files/pythonapp/flask-gunicorn
+    i=$(cat /root/buildidold)
+    inew=$((i + 1))
+    echo $inew > /root/buildid
+    docker build -t k8s-registry.local:5000/myflask:v$inew .
+    docker push k8s-registry.local:5000/myflask:v$inew
+    docker pull mysql
+
+

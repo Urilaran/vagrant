@@ -1,0 +1,275 @@
+---
+# kubernetes tasks
+
+- name: set hostname
+  shell: hostnamectl set-hostname node1 --static
+
+
+- name: disable swap
+  shell: |
+    swapoff -a
+    sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+- name: allow ports on firewall on node1 
+  ufw:
+    port: "{{ item }}"
+    rule: allow
+    proto: tcp
+  with_items:
+    - 6443
+    - 2379
+    - 2380
+    - 10250
+    - 10251
+    - 10252
+    - 30000:32767
+
+- name: allow ports on firewall on node1
+  ufw:
+    port: "{{ item }}"
+    rule: allow
+    proto: udp
+  with_items:
+    - 8285
+    - 8472
+
+- name: allow ports on firewall for workers
+  ufw:
+    port: "{{ item }}"
+    rule: allow
+    proto: tcp
+  with_items:
+    - 10250
+    - 30000:32767
+
+- name: install curl apt-transport-https
+  apt:
+    name: ['curl','apt-transport-https']
+    update_cache: true
+    state: latest
+   
+- name: import kubernetes gpg and add source
+  shell: |
+    curl -s "{{k8s_gpg_url}}" | sudo apt-key add -
+    echo "deb "{{k8s_repo}}" kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+
+- name: install kubernetes packages
+  apt:
+    name: "{{ item }}"
+    update_cache: true
+    state: latest
+  with_items: "{{ k8s_req_packages }}"
+  any_errors_fatal: true
+
+
+
+- name: kubernetes sysctl settings
+  copy:
+    content: "{{ kubernete_sysctl_file }}"
+    dest: /etc/sysctl.d/k8s.conf
+    owner: root
+    group: root
+    mode: 0755
+
+
+- name: Run sysctl --system command
+  command:
+    cmd: "sysctl --system"
+
+- name: modprobe overlay br_netfilter
+  shell: |
+    modprobe overlay
+    modprobe br_netfilter
+
+
+- name: register kubectl version
+  shell:
+    kubectl version --client
+  register: kubectlv
+
+- name: register kubeadm version
+  shell: 
+    kubeadm version
+  register: kubeadmv
+
+- name: debug versions
+  debug:
+    msg: "kubectl version is {{kubectlv.stdout_lines}} and kubeadm version is {{kubeadmv.stdout_lines}}"
+
+- name: install docker engine dependencies
+  apt:
+    name: ['gnupg2', 'software-properties-common','ca-certificates']
+    update_cache: true
+    state: latest
+
+- name: install docker gpg
+  shell: |
+    curl -fsSL "{{docker_gpg_url}}" | sudo apt-key add -
+    add-apt-repository "deb [arch=amd64] "{{docker_repo}}" $(lsb_release -cs) stable"
+
+- name: install docker packages
+  apt:
+    name: "{{ item }}"
+    update_cache: true
+    state: latest
+  with_items: "{{ docker_req_packages }}"
+
+
+
+- name: enable  kubelet
+  service: enabled=yes name=kubelet state=started
+
+- name: enable  docker
+  service: enabled=yes name=docker state=started
+
+- name: docker config settings
+  copy:
+    content: "{{ docker_config_file }}"
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: 0755
+
+- name: configure docker service
+  shell: 
+    mkdir -p /etc/systemd/system/docker.service.d
+
+- name: reload systemd daemon and restart kubelet
+  service: name=kubelet enabled=yes state=restarted
+ 
+- name: reload systemd daemon and restart kubelet
+  service: name=docker enabled=yes state=restarted
+
+- name: get br_netfilter output
+  shell: 
+    lsmod | grep br_netfilter
+  register: brnet
+
+- name: output console br_netfilter
+  debug:
+    msg: "br_netfilter lsmod output is {{ brnet.stdout_lines }}"
+
+- name: kubeadm config images pull
+  shell: |
+    kubeadm config images pull
+    sleep 30
+
+
+- name: initialize cluster 
+  shell: |
+    kubeadm init --pod-network-cidr={{ pod_network }} --control-plane-endpoint={{ control_plane_endpoint }}
+  ignore_errors: False
+  any_errors_fatal: true
+
+- name: copy admin.conf to /root/.kube/config to node1
+  shell: |
+    rm -rf /root/.kube
+    mkdir -p /root/.kube
+    cp -i /etc/kubernetes/admin.conf /root/.kube/config
+    chown $(id -u):$(id -g) /root/.kube/config
+  ignore_errors: True
+
+- name: install network plugin on node1
+  shell: |
+    kubectl apply -f "{{docker_net_url}}?k8s-version=$(kubectl version | base64 | tr -d '\n')"    
+    sleep 60
+  any_errors_fatal: true
+
+- name: check node1 node is in the cluster
+  shell:
+    if [[ $(kubectl get nodes | grep node 2>/dev/null) != 0 ]]; then echo "no"; else echo "yes"; fi  2>/dev/null
+  register: chkmaster
+
+
+- name: Debug node1 node in cluster
+  debug:
+    msg: "node1 node cluster'dadir"
+
+
+
+
+- name: schedule node1 node
+  shell: |
+    kubectl label node node1 kubernetes.io/role=worker --overwrite
+    kubectl taint node node1 node-role.kubernetes.io/master:NoSchedule-
+
+
+### INSTALL METRIC SERVER on NODE1
+- name: add metric server
+  shell: | 
+    wget  https://github.com/kubernetes-sigs/metrics-server/releases/download/{{metric_server_version}}/components.yaml -O /root/metrics-server.yaml
+    sed -i -e "s/cert\-dir\=\/tmp/cert\-dir\=\/tmp\\n        \- \-\-kubelet\-insecure\-tls/g" /root/metrics-server.yaml 
+    kubectl apply -f /root/metrics-server.yaml
+### INSTALL KUBEDASH on NODE1
+
+
+- name: dashboard config serviceaccount
+  copy:
+    content: "{{ dashboard_sa_file }}"
+    dest: /root/k8s-dashboard-sa.yaml
+    owner: root
+    group: root
+    mode: 0755
+
+- name: dashboard config rolebindings
+  copy:
+    content: "{{ dashboard_rb_file }}"
+    dest: /root/k8s-dashboard-rb.yaml
+    owner: root
+    group: root
+    mode: 0755
+
+- name: apply dashboard service account and rolebindings
+  shell: |
+    kubectl apply -f /root/k8s-dashboard-sa.yaml
+    kubectl apply -f /root/k8s-dashboard-rb.yaml
+
+
+- name: add kubernetes dashboard
+  shell: |  
+    wget https://raw.githubusercontent.com/kubernetes/dashboard/{{dashboard_version}}/aio/deploy/recommended.yaml -O /root/kubernetes-dashboard.yaml
+    sed -i -e "s/\- \-\-auto\-generate\-certificates/\- \-\-token\-ttl\=0\\n            \- \-\-insecure\-bind\-address\=0.0.0.0\\n            \- \-\-insecure\-port\=9090\\n            \- \-\-enable\-insecure\-login/g" /root/kubernetes-dashboard.yaml
+    sed -i -e "s/port\: 8443/port\: 9090/g" /root/kubernetes-dashboard.yaml
+    sed -i -e "s/scheme: HTTPS/scheme: HTTP/g" kubernetes-dashboard.yaml
+    kubectl apply -f  /root/kubernetes-dashboard.yaml
+
+- name: Get token
+  shell: |
+    kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') > /root/k8s-dashboard-token
+    kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') 
+  register: dashtoken
+
+- name: output token
+  debug:
+    msg: "kubernetes dashboard tokan is  {{ dashtoken.stdout_lines }}"
+
+
+- name: dashboard config service
+  copy:
+    content: "{{ dashboard_svc_file }}"
+    dest: /root/k8s-dashboard-svc.yaml
+    owner: root
+    group: root
+    mode: 0755
+
+- name: config kubernetes dashboard service
+  shell: |
+    kubectl delete svc kubernetes-dashboard -n kubernetes-dashboard
+    kubectl apply -f /root/k8s-dashboard-svc.yaml
+
+
+## kubectl get cs HEALTY CS and Scheduler 
+- name: scheduler ve controller durumlarini healty yapma
+  shell: |
+    sed -i -e "s/- --port=0/#- --port=0/g" /etc/kubernetes/manifests/kube-controller-manager.yaml
+    sed -i -e "s/- --port=0/#- --port=0/g" /etc/kubernetes/manifests/kube-scheduler.yaml
+
+
+
+
+
+
+
+
+
