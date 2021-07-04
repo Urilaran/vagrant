@@ -103,6 +103,8 @@ vagrant init ubuntu/bionic64
 git clone https://github.com/aydemirkala/vagrant.git
 cd vagrant
 vagrant up
+
+####  TROUBLESHOOTING
 # If you get below error message:
 #==> node1: Booting VM...
 #There was an error while executing `VBoxManage`, a CLI used by Vagrant
@@ -115,9 +117,10 @@ vagrant up
 #VBoxManage.exe: error: Details: code E_FAIL (0x80004005), component ConsoleWrap, interface IConsole
 
 Control Panel -> Program And Features -> Turn Windows Features on or off-> HyperV->Turn Off
+Enter BIOS-> CPU-> Disable Inte
 Restart PC
 
-
+########################################
 
 
 
