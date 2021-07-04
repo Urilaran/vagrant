@@ -104,7 +104,7 @@ git clone https://github.com/aydemirkala/vagrant.git
 cd vagrant
 vagrant up
 
-####  TROUBLESHOOTING
+####  TROUBLESHOOTING for Windows 10
 # If you get below error message:
 #==> node1: Booting VM...
 #There was an error while executing `VBoxManage`, a CLI used by Vagrant
