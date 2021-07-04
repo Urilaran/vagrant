@@ -1,6 +1,6 @@
 # VAGRANT KUBERNETES DEPLOYMENT WITH PYTHON APP MYSQL DB
 
-The Main purpose of this project is to deploy singe kubernetes node and python application by single command which is 'vagrant up'. Also its important to redeploy application when source code changes with the least effort. 
+The main purpose of this project is to deploy singe kubernetes node and python application by single command which is 'vagrant up'. Also its important to redeploy application when source code changes with the least effort. 
 
 Project consists of ansible roles which are neccessary to complete below steps when vagrant provisioning begins.
 Step1: Configure Vagrant, MobaXterm and Virtualbox
