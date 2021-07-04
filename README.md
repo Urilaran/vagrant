@@ -22,11 +22,17 @@ if everything is ok then you can access application from browser http://192.168.
 Output is: Hello Devops 123, 1234!
 
 Notes:
+
 Gunicorn runs flask application and binds at port 3000. 
-Kubernetes version is 1.21.0, 
-python image is from alpine. 
+
+Kubernetes version is 1.21.2, 
+
+Python image is from 3.6lpine. 
+
 Mysql image is latest mysql version. 
+
 Private image registry version is 2.7.0. 
+
 Kubernetes metric server and dashboard are also installed.    
 
 
