@@ -4,11 +4,17 @@ The Main purpose of this project is to deploy singe kubernetes node and python a
 
 Project consists of ansible roles which are neccessary to complete below steps when vagrant provisioning begins.
 Step1: Configure Vagrant, MobaXterm and Virtualbox
+
 Step2: Create Kubernetes single node node1 
+
 Step3: Create Private Registry k8s-registry.local:5000  (user admin, password admin123)
+
 Step4: Create User "developer" with "sudo" access (password qwe123)
+
 Step5: Build Flask Application flask-gunicorn and push image to private registry
+
 Step6: Deploy Mysql statefulset and Flask gunicorn application
+
 Step7: Redeploy application when code changes by command "vagrant reload --provision-with=ansible_local or directly from node1
 
 Depending of machine resources you may have to wait a few minutes for apps to run
