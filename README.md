@@ -164,4 +164,7 @@ password: qwe123
 cd /vagrant/
 ansible-playbook -i hosts.ini roles.yml -t myflask -u developer -b -K -k 
 ```
+![image](https://user-images.githubusercontent.com/59725025/124396623-4c59c200-dd13-11eb-8ce0-10ae1bacd758.png)
+
+![image](https://user-images.githubusercontent.com/59725025/124396645-6abfbd80-dd13-11eb-974f-ba60a41bd33e.png)
 
