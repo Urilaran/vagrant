@@ -125,6 +125,8 @@ vi roles/python-src/files/pythonapp/flask-gunicorn/src/app.py
 vagrant.exe reload --provision-with=ansible_local
 
 ## Or you can run ansible-playbook  inside node1 directly
+ssh developer@192.168.50.10
+password: qwe123
 cd /vagrant/
 ansible-playbook -i hosts.ini roles.yml -t myflask -u developer -b -K -k 
 ```
